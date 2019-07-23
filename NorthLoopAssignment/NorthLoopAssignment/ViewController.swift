@@ -32,7 +32,12 @@
  From the response we are not getting anything for capsule name, hence assuming rocketName to be capsule Name.
  Date of launch is present as both local and global, hence assuming the date of launch to be used is local, though I have parsed both values and global can be used as well
  Total number of launch can be understood as the total number of launch of filtered launches which is before 2014 or total number of launches till date, hence assuming it is total number of launches till date.
-
+ 
+ Work from my side:
+ Assuming the top section is static and the tableView scrolls in its bounds area
+ Added spinner animation to show the app is not stuck
+ The image comes as default image until the image is loaded. This also handles the situation when the link comes as empty from data
+ Added alert to inform user that data isn't loaded
 */
 
 import UIKit
@@ -43,8 +48,22 @@ class ViewController: UIViewController {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
         self.view.addSubview(rootView)
+        self.showSpinner(onView: self.view)
         getData()
         configure()
+    }
+    
+    // To handle orientation change
+    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+        super.viewWillTransition(to: size, with: coordinator)
+        if UIDevice.current.orientation.isLandscape {
+            let height = size.height
+            welcomeSectionHeightConstraint.constant = height*(1/2)
+
+        } else {
+            let height = size.height
+            welcomeSectionHeightConstraint.constant = height*(1/3)
+        }
     }
     
     struct Launches: Codable {
@@ -53,9 +72,13 @@ class ViewController: UIViewController {
         let launch_year: String?
         let launch_date_utc: String?
         let launch_date_local: String?
+        let links: Links
+    }
+    
+    struct LaunchDetails: Codable {
+        let flight_number: Int?
         let mission_name: String?
         let mission_id: [String?]
-        let links: Links
     }
     
     struct Rocket: Codable {
@@ -73,11 +96,22 @@ class ViewController: UIViewController {
     var dataLoaded: Bool = false {
         didSet {
             totalLaunchesValue.text = totalLaunchesData
+            self.removeSpinner()
             self.tableView.reloadData()
         }
     }
     
-    var check:[Launches] = []
+    var LaunchesData:[Launches] = []
+    var LaunchDetailData:LaunchDetails? = nil {
+        didSet {
+            let popupVC = popupViewController()
+            popupVC.data = self.LaunchDetailData
+            popupVC.modalPresentationStyle = .overCurrentContext
+            popupVC.modalTransitionStyle = .crossDissolve
+            self.removeSpinner()
+            present(popupVC, animated: true, completion: nil)
+        }
+    }
     
     let rootView:UIView = {
         let view = UIView()
@@ -95,6 +129,8 @@ class ViewController: UIViewController {
         return view
     }()
     
+    var welcomeSectionHeightConstraint:NSLayoutConstraint = NSLayoutConstraint()
+    
     let nameLabel: UILabel = {
        let label = UILabel()
         label.accessibilityIdentifier = "nameLabel"
@@ -108,8 +144,8 @@ class ViewController: UIViewController {
         view.accessibilityIdentifier = "masterDataView"
         view.translatesAutoresizingMaskIntoConstraints = false;
         view.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
-        view.heightAnchor.constraint(equalToConstant: 80).isActive = true
-        view.layer.cornerRadius = 40.0
+        view.heightAnchor.constraint(greaterThanOrEqualToConstant: 70).isActive = true
+        view.layer.cornerRadius = 35.0
         return view
     }()
     
@@ -180,12 +216,14 @@ class ViewController: UIViewController {
         //welcomeSectionView constraints
         let welcomeSectionHeight = self.view.frame.height*(1/3)
         constraints.append(welcomeSectionView.leadingAnchor.constraint(equalTo: rootView.leadingAnchor))
-        //        The below commented constraint to handle if the top has to be as per readableCOntentGuide
-        //        constraints.append(welcomeSectionView.topAnchor.constraint(equalTo: rootView.readableContentGuide.topAnchor))
+        //The below commented constraint to handle if the top has to be as per readableCOntentGuide
+        //constraints.append(welcomeSectionView.topAnchor.constraint(equalTo: rootView.readableContentGuide.topAnchor))
         constraints.append(welcomeSectionView.topAnchor.constraint(equalTo: rootView.topAnchor))
         constraints.append(welcomeSectionView.trailingAnchor.constraint(equalTo: rootView.trailingAnchor))
         constraints.append(welcomeSectionView.bottomAnchor.constraint(equalTo: tableSectionView.topAnchor))
-        constraints.append(welcomeSectionView.heightAnchor.constraint(equalToConstant: welcomeSectionHeight))
+        //To handle change in orientation
+        welcomeSectionHeightConstraint = welcomeSectionView.heightAnchor.constraint(equalToConstant: welcomeSectionHeight)
+        welcomeSectionHeightConstraint.isActive = true
         
         //nameLabel constraints
         constraints.append(nameLabel.leadingAnchor.constraint(equalTo: welcomeSectionView.leadingAnchor, constant: 20))
@@ -224,34 +262,32 @@ class ViewController: UIViewController {
         constraints.append(tableView.bottomAnchor.constraint(equalTo: tableSectionView.bottomAnchor))
         
         NSLayoutConstraint.activate(constraints)
-        
     }
     
-    
-
-
 }
 
 
 // TableView DataSource and Delegate
 extension ViewController: UITableViewDelegate, UITableViewDataSource {
 
-
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return check.count
+        return LaunchesData.count
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "CustomCell", for: indexPath as IndexPath) as! CustomTableViewCell
-        let array = check as NSArray
+        let array = LaunchesData as NSArray
         cell.data = array[indexPath.item] as? Launches
         return cell
     }
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        
+        let array = LaunchesData as NSArray
+        let launchArray = array[indexPath.item] as? Launches
+        let flightNumber = launchArray?.flight_number
+        getSingleLaunchDetails(parameter: flightNumber!)
+        self.showSpinner(onView: self.view)
     }
-
 
 }
 
@@ -260,7 +296,6 @@ extension ViewController: UITableViewDelegate, UITableViewDataSource {
 extension ViewController {
     
     func getData() {
-
     
         let url = "https://api.spacexdata.com/v3/launches"
         let urlObj = URL(string: url)
@@ -277,23 +312,79 @@ extension ViewController {
                     //Getting launches before 2014
                     for launch in launches {
                         // Double check if the launch_year comes null
-                        let valueString:String = launch.launch_year ?? "No Launch Date"
+                        let valueString:String = launch.launch_year ?? "0" // setting this to zero, can be set to future year too
                         let valueInt:Int = Int(valueString)!
                         if(valueInt<2014) {
-                            self.check.append(launch)
+                            self.LaunchesData.append(launch)
                         }
-                        
                     }
                     self.dataLoaded = true
                 }
-                
             } catch {
-                print("JSON DECODING FAILIURE")
-                print(error)
+                DispatchQueue.main.async {
+                    print("JSON DECODING FAILIURE")
+                    print(error)
+                    self.showAlert()
+                }
             }
             
             }.resume()
+    }
+    
+    func getSingleLaunchDetails(parameter: Int) {
         
+        let url = "https://api.spacexdata.com/v3/launches"+"/\(parameter)"
+        let urlObj = URL(string: url)
         
+        URLSession.shared.dataTask(with: urlObj!){(data,response,error) in
+            
+            do {
+                let launchDetail = try JSONDecoder().decode(LaunchDetails.self , from: data!)
+                DispatchQueue.main.async {
+                    self.LaunchDetailData = launchDetail
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    print("JSON DECODING FAILIURE")
+                    print(error)
+                    self.showAlert()
+                }
+                
+            }
+            
+            }.resume()
+    }
+    
+    func showAlert() {
+        let alert = UIAlertController(title: "Error", message: "It seems something went wrong! Please quit the app and try again!", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .cancel, handler: nil))
+        self.present(alert, animated: true)
+    }
+}
+
+// Adding Spinner when the data is being loaded from server and being parsed
+var vSpinner : UIView?
+
+extension UIViewController {
+    func showSpinner(onView : UIView) {
+        let spinnerView = UIView.init(frame: onView.bounds)
+        spinnerView.backgroundColor = UIColor.init(red: 0.5, green: 0.5, blue: 0.5, alpha: 0.5)
+        let ai = UIActivityIndicatorView.init(style: .whiteLarge)
+        ai.startAnimating()
+        ai.center = spinnerView.center
+        
+        DispatchQueue.main.async {
+            spinnerView.addSubview(ai)
+            onView.addSubview(spinnerView)
+        }
+        
+        vSpinner = spinnerView
+    }
+    
+    func removeSpinner() {
+        DispatchQueue.main.async {
+            vSpinner?.removeFromSuperview()
+            vSpinner = nil
+        }
     }
 }

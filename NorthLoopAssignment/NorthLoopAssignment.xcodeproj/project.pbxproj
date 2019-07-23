@@ -13,6 +13,7 @@
 		1C5B8BDE22E5A3A800C92E38 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1C5B8BDD22E5A3A800C92E38 /* Assets.xcassets */; };
 		1C5B8BE122E5A3A800C92E38 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 1C5B8BDF22E5A3A800C92E38 /* LaunchScreen.storyboard */; };
 		1C5B8BE922E5B7B200C92E38 /* CustomTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C5B8BE822E5B7B200C92E38 /* CustomTableViewCell.swift */; };
+		1CB83A6922E6E58600A4BFE7 /* popupViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CB83A6822E6E58600A4BFE7 /* popupViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,6 +25,7 @@
 		1C5B8BE022E5A3A800C92E38 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		1C5B8BE222E5A3A800C92E38 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		1C5B8BE822E5B7B200C92E38 /* CustomTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTableViewCell.swift; sourceTree = "<group>"; };
+		1CB83A6822E6E58600A4BFE7 /* popupViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = popupViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -59,6 +61,7 @@
 				1C5B8BD622E5A39900C92E38 /* AppDelegate.swift */,
 				1C5B8BD822E5A39900C92E38 /* ViewController.swift */,
 				1C5B8BE822E5B7B200C92E38 /* CustomTableViewCell.swift */,
+				1CB83A6822E6E58600A4BFE7 /* popupViewController.swift */,
 				1C5B8BDA22E5A39900C92E38 /* Main.storyboard */,
 				1C5B8BDD22E5A3A800C92E38 /* Assets.xcassets */,
 				1C5B8BDF22E5A3A800C92E38 /* LaunchScreen.storyboard */,
@@ -141,6 +144,7 @@
 				1C5B8BE922E5B7B200C92E38 /* CustomTableViewCell.swift in Sources */,
 				1C5B8BD922E5A39900C92E38 /* ViewController.swift in Sources */,
 				1C5B8BD722E5A39900C92E38 /* AppDelegate.swift in Sources */,
+				1CB83A6922E6E58600A4BFE7 /* popupViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
